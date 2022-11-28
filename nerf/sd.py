@@ -38,10 +38,10 @@ class StableDiffusion(nn.Module):
         self.out_folder = out_folder
 
         if self.visualize:
-            os.mkdir(os.path.join(self.out_folder, "nerf"))
-            os.mkdir(os.path.join(self.out_folder, "noisy"))
-            os.mkdir(os.path.join(self.out_folder, "denoised"))
-            os.mkdir(os.path.join(self.out_folder, "residual"))
+            os.makedirs(os.path.join(self.out_folder, "nerf"))
+            os.makedirs(os.path.join(self.out_folder, "noisy"))
+            os.makedirs(os.path.join(self.out_folder, "denoised"))
+            os.makedirs(os.path.join(self.out_folder, "residual"))
 
         print(f'[INFO] loading stable diffusion...')
                 
