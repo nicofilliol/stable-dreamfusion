@@ -38,10 +38,10 @@ class StableDiffusion(nn.Module):
         self.out_folder = out_folder
 
         if self.visualize:
-            os.makedirs(os.path.join(self.out_folder, "nerf"))
-            os.makedirs(os.path.join(self.out_folder, "noisy"))
-            os.makedirs(os.path.join(self.out_folder, "denoised"))
-            os.makedirs(os.path.join(self.out_folder, "residual"))
+            if not os.path.exists(os.path.join(self.out_folder, "nerf")): os.makedirs(os.path.join(self.out_folder, "nerf"))
+            if not os.path.exists(os.path.join(self.out_folder, "noisy")): os.makedirs(os.path.join(self.out_folder, "noisy"))
+            if not os.path.exists(os.path.join(self.out_folder, "denoised")): os.makedirs(os.path.join(self.out_folder, "denoised"))
+            if not os.path.exists(os.path.join(self.out_folder, "residual")): os.makedirs(os.path.join(self.out_folder, "residual"))
 
         print(f'[INFO] loading stable diffusion...')
                 
@@ -128,12 +128,13 @@ class StableDiffusion(nn.Module):
 
         # Compute previous noisy sample based on predicted noise by diffusion model
         if visualize:
-            prev_latents = self.scheduler.step(noise_pred, t, latents)['prev_sample']
+            prev_latents = self.get_previous_sample(latents, t, noise_pred)
             prev_image = self.decode_latents(prev_latents)
             save_image(prev_image, os.path.join(self.out_folder, f"denoised/{step}.png"))
 
-            residual_latents = prev_latents-latents_noisy
-            residual_image = self.decode_latents(residual_latents)
+            residual_noise = noise_pred-noise
+            res_latents = self.get_previous_sample(latents, t, residual_noise)
+            residual_image = self.decode_latents(res_latents)
             save_image(residual_image, os.path.join(self.out_folder, f"residual/{step}.png"))
 
         # w(t), sigma_t^2
@@ -151,6 +152,9 @@ class StableDiffusion(nn.Module):
         # torch.cuda.synchronize(); print(f'[TIME] guiding: backward {time.time() - _t:.4f}s')
 
         return 0 # dummy loss value
+
+    def get_previous_sample(self, sample, timestep, noise_pred):
+        return self.scheduler._get_prev_sample(sample, timestep, timestep-1, noise_pred)
 
     def produce_latents(self, text_embeddings, height=512, width=512, num_inference_steps=50, guidance_scale=7.5, latents=None):
 
@@ -238,7 +242,7 @@ if __name__ == '__main__':
 
     seed_everything(opt.seed)
 
-    device = torch.device('cuda')
+    device = torch.device('cpu')
 
     sd = StableDiffusion(device)
 
