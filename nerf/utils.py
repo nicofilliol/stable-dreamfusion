@@ -334,7 +334,7 @@ class Trainer(object):
 
     ### ------------------------------	
 
-    def train_step(self, data, step):
+    def train_step(self, data, epoch, step):
 
         rays_o = data['rays_o'] # [B, N, 3]
         rays_d = data['rays_d'] # [B, N, 3]
@@ -376,7 +376,7 @@ class Trainer(object):
         
         # encode pred_rgb to latents
         # _t = time.time()
-        loss = self.guidance.train_step(text_z, pred_rgb, step=step)
+        loss = self.guidance.train_step(text_z, pred_rgb, epoch=epoch, step=step)
         # torch.cuda.synchronize(); print(f'[TIME] total guiding {time.time() - _t:.4f}s')
 
         # occupancy loss
@@ -483,7 +483,7 @@ class Trainer(object):
         for epoch in range(self.epoch + 1, max_epochs + 1):
             self.epoch = epoch
 
-            self.train_one_epoch(train_loader)
+            self.train_one_epoch(train_loader, epoch=epoch)
 
             if self.workspace is not None and self.local_rank == 0:
                 self.save_checkpoint(full=True, best=False)
@@ -670,7 +670,7 @@ class Trainer(object):
 
         return outputs
 
-    def train_one_epoch(self, loader):
+    def train_one_epoch(self, loader, epoch):
         self.log(f"==> Start Training {self.workspace} Epoch {self.epoch}, lr={self.optimizer.param_groups[0]['lr']:.6f} ...")
 
         total_loss = 0
@@ -703,7 +703,7 @@ class Trainer(object):
             self.optimizer.zero_grad()
 
             with torch.cuda.amp.autocast(enabled=self.fp16):
-                pred_rgbs, pred_ws, loss = self.train_step(data, step=i)
+                pred_rgbs, pred_ws, loss = self.train_step(data, epoch=epoch, step=i)
          
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)

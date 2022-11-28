@@ -81,7 +81,7 @@ class StableDiffusion(nn.Module):
         return text_embeddings
 
     # TODO: Store visualizations of NeRF output, noise and residual
-    def train_step(self, text_embeddings, pred_rgb, step, guidance_scale=100):
+    def train_step(self, text_embeddings, pred_rgb, epoch, step, guidance_scale=100):
         
         # Visualize step
         visualize = self.visualize and step % 10 == 0
@@ -93,7 +93,7 @@ class StableDiffusion(nn.Module):
 
         # Store predicted (by NeRF) image
         if visualize:
-            save_image(pred_rgb_512, os.path.join(self.out_folder, f"nerf/{step}.png"))
+            save_image(pred_rgb_512, os.path.join(self.out_folder, f"nerf/{epoch}_{step}.png"))
 
         # torch.cuda.synchronize(); print(f'[TIME] guiding: interp {time.time() - _t:.4f}s')
 
@@ -115,7 +115,7 @@ class StableDiffusion(nn.Module):
             # Store image corresponding to noisy latents
             if visualize:
                 noisy_image = self.decode_latents(latents_noisy)
-                save_image(noisy_image, os.path.join(self.out_folder, f"noisy/{step}.png"))
+                save_image(noisy_image, os.path.join(self.out_folder, f"noisy/{epoch}_{step}.png"))
 
             # pred noise
             latent_model_input = torch.cat([latents_noisy] * 2)
@@ -130,12 +130,12 @@ class StableDiffusion(nn.Module):
         if visualize:
             prev_latents = self.get_previous_sample(latents, t, noise_pred)
             prev_image = self.decode_latents(prev_latents)
-            save_image(prev_image, os.path.join(self.out_folder, f"denoised/{step}.png"))
+            save_image(prev_image, os.path.join(self.out_folder, f"denoised/{epoch}_{step}.png"))
 
             residual_noise = noise_pred-noise
             res_latents = self.get_previous_sample(latents, t, residual_noise)
             residual_image = self.decode_latents(res_latents)
-            save_image(residual_image, os.path.join(self.out_folder, f"residual/{step}.png"))
+            save_image(residual_image, os.path.join(self.out_folder, f"residual/{epoch}_{step}.png"))
 
         # w(t), sigma_t^2
         w = (1 - self.alphas[t])
