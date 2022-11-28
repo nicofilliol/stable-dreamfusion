@@ -37,6 +37,12 @@ class StableDiffusion(nn.Module):
         self.visualize = visualize
         self.out_folder = out_folder
 
+        if self.visualize:
+            os.mkdir(os.path.join(self.out_folder, "nerf"))
+            os.mkdir(os.path.join(self.out_folder, "noisy"))
+            os.mkdir(os.path.join(self.out_folder, "denoised"))
+            os.mkdir(os.path.join(self.out_folder, "residual"))
+
         print(f'[INFO] loading stable diffusion...')
                 
         # 1. Load the autoencoder model which will be used to decode the latents into image space. 
@@ -87,7 +93,7 @@ class StableDiffusion(nn.Module):
 
         # Store predicted (by NeRF) image
         if visualize:
-            save_image(pred_rgb_512, os.path.join(self.out_folder, f"/nerf/{step}.png"))
+            save_image(pred_rgb_512, os.path.join(self.out_folder, f"nerf/{step}.png"))
 
         # torch.cuda.synchronize(); print(f'[TIME] guiding: interp {time.time() - _t:.4f}s')
 
@@ -109,7 +115,7 @@ class StableDiffusion(nn.Module):
             # Store image corresponding to noisy latents
             if visualize:
                 noisy_image = self.decode_latents(latents_noisy)
-                save_image(noisy_image, os.path.join(self.out_folder, f"/noisy/{step}.png"))
+                save_image(noisy_image, os.path.join(self.out_folder, f"noisy/{step}.png"))
 
             # pred noise
             latent_model_input = torch.cat([latents_noisy] * 2)
@@ -124,11 +130,11 @@ class StableDiffusion(nn.Module):
         if visualize:
             prev_latents = self.scheduler.step(noise_pred, t, latents)['prev_sample']
             prev_image = self.decode_latents(prev_latents)
-            save_image(prev_image, self.out_folder, os.path.join(self.out_folder, f"/denoised/{step}.png"))
+            save_image(prev_image, os.path.join(self.out_folder, f"denoised/{step}.png"))
 
             residual_latents = prev_latents-latents_noisy
             residual_image = self.decode_latents(residual_latents)
-            save_image(residual_image, self.out_folder, os.path.join(self.out_folder, f"/residual/{step}.png"))
+            save_image(residual_image, os.path.join(self.out_folder, f"residual/{step}.png"))
 
         # w(t), sigma_t^2
         w = (1 - self.alphas[t])
