@@ -7,8 +7,10 @@ logging.set_verbosity_error()
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision.utils import save_image
 
 import time
+import os
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -17,7 +19,7 @@ def seed_everything(seed):
     #torch.backends.cudnn.benchmark = True
 
 class StableDiffusion(nn.Module):
-    def __init__(self, device):
+    def __init__(self, device, visualize=True, out_folder="visualizations/"):
         super().__init__()
 
         try:
@@ -32,6 +34,8 @@ class StableDiffusion(nn.Module):
         self.num_train_timesteps = 1000
         self.min_step = int(self.num_train_timesteps * 0.02)
         self.max_step = int(self.num_train_timesteps * 0.98)
+        self.visualize = visualize
+        self.out_folder = out_folder
 
         print(f'[INFO] loading stable diffusion...')
                 
@@ -70,13 +74,21 @@ class StableDiffusion(nn.Module):
         text_embeddings = torch.cat([uncond_embeddings, text_embeddings])
         return text_embeddings
 
-
-    def train_step(self, text_embeddings, pred_rgb, guidance_scale=100):
+    # TODO: Store visualizations of NeRF output, noise and residual
+    def train_step(self, text_embeddings, pred_rgb, step, guidance_scale=100):
         
+        # Visualize step
+        visualize = self.visualize and step % 10 == 0
+
         # interp to 512x512 to be fed into vae.
 
         # _t = time.time()
         pred_rgb_512 = F.interpolate(pred_rgb, (512, 512), mode='bilinear', align_corners=False)
+
+        # Store predicted (by NeRF) image
+        if visualize:
+            save_image(pred_rgb_512, os.path.join(self.out_folder, f"/nerf/{step}.png"))
+
         # torch.cuda.synchronize(); print(f'[TIME] guiding: interp {time.time() - _t:.4f}s')
 
         # timestep ~ U(0.02, 0.98) to avoid very high/low noise level
@@ -93,6 +105,12 @@ class StableDiffusion(nn.Module):
             # add noise
             noise = torch.randn_like(latents)
             latents_noisy = self.scheduler.add_noise(latents, noise, t)
+
+            # Store image corresponding to noisy latents
+            if visualize:
+                noisy_image = self.decode_latents(latents_noisy)
+                save_image(noisy_image, os.path.join(self.out_folder, f"/noisy/{step}.png"))
+
             # pred noise
             latent_model_input = torch.cat([latents_noisy] * 2)
             noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=text_embeddings).sample
@@ -101,6 +119,16 @@ class StableDiffusion(nn.Module):
         # perform guidance (high scale from paper!)
         noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
         noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
+
+        # Compute previous noisy sample based on predicted noise by diffusion model
+        if visualize:
+            prev_latents = self.scheduler.step(noise_pred, t, latents)['prev_sample']
+            prev_image = self.decode_latents(prev_latents)
+            save_image(prev_image, self.out_folder, os.path.join(self.out_folder, f"/denoised/{step}.png"))
+
+            residual_latents = prev_latents-latents_noisy
+            residual_image = self.decode_latents(residual_latents)
+            save_image(residual_image, self.out_folder, os.path.join(self.out_folder, f"/residual/{step}.png"))
 
         # w(t), sigma_t^2
         w = (1 - self.alphas[t])

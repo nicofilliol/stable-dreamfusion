@@ -334,7 +334,7 @@ class Trainer(object):
 
     ### ------------------------------	
 
-    def train_step(self, data):
+    def train_step(self, data, step):
 
         rays_o = data['rays_o'] # [B, N, 3]
         rays_d = data['rays_d'] # [B, N, 3]
@@ -376,7 +376,7 @@ class Trainer(object):
         
         # encode pred_rgb to latents
         # _t = time.time()
-        loss = self.guidance.train_step(text_z, pred_rgb)
+        loss = self.guidance.train_step(text_z, pred_rgb, step=step)
         # torch.cuda.synchronize(); print(f'[TIME] total guiding {time.time() - _t:.4f}s')
 
         # occupancy loss
@@ -690,7 +690,7 @@ class Trainer(object):
 
         self.local_step = 0
 
-        for data in loader:
+        for i, data in enumerate(loader):
             
             # update grid every 16 steps
             if self.model.cuda_ray and self.global_step % self.opt.update_extra_interval == 0:
@@ -703,7 +703,7 @@ class Trainer(object):
             self.optimizer.zero_grad()
 
             with torch.cuda.amp.autocast(enabled=self.fp16):
-                pred_rgbs, pred_ws, loss = self.train_step(data)
+                pred_rgbs, pred_ws, loss = self.train_step(data, step=i)
          
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)
