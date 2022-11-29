@@ -730,6 +730,10 @@ class Trainer(object):
                     pbar.set_description(f"loss={loss_val:.4f} ({total_loss/self.local_step:.4f})")
                 pbar.update(loader.batch_size)
 
+            # Empty cuda cache
+            del data
+            torch.cuda.empty_cache()
+
         if self.ema is not None:
             self.ema.update()
 
