@@ -127,15 +127,16 @@ class StableDiffusion(nn.Module):
         noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
 
         # Compute previous noisy sample based on predicted noise by diffusion model
-        if visualize:
-            prev_latents = self.get_previous_sample(latents, t, noise_pred)
-            prev_image = self.decode_latents(prev_latents)
-            save_image(prev_image, os.path.join(self.out_folder, f"denoised/{epoch}_{step}.png"))
+        with torch.no_grad():
+            if visualize:
+                prev_latents = self.get_previous_sample(latents, t, noise_pred)
+                prev_image = self.decode_latents(prev_latents)
+                save_image(prev_image, os.path.join(self.out_folder, f"denoised/{epoch}_{step}.png"))
 
-            residual_noise = noise_pred-noise
-            res_latents = self.get_previous_sample(latents, t, residual_noise)
-            residual_image = self.decode_latents(res_latents)
-            save_image(residual_image, os.path.join(self.out_folder, f"residual/{epoch}_{step}.png"))
+                residual_noise = noise_pred-noise
+                res_latents = self.get_previous_sample(latents, t, residual_noise)
+                residual_image = self.decode_latents(res_latents)
+                save_image(residual_image, os.path.join(self.out_folder, f"residual/{epoch}_{step}.png"))
 
         # w(t), sigma_t^2
         w = (1 - self.alphas[t])
@@ -242,7 +243,7 @@ if __name__ == '__main__':
 
     seed_everything(opt.seed)
 
-    device = torch.device('cpu')
+    device = torch.device('gpu')
 
     sd = StableDiffusion(device)
 
