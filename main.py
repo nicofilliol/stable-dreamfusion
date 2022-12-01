@@ -149,12 +149,10 @@ if __name__ == '__main__':
         trainer = Trainer('df', opt, model, guidance, device=device, workspace=opt.workspace, optimizer=optimizer, ema_decay=None, fp16=opt.fp16, lr_scheduler=scheduler, use_checkpoint=opt.ckpt, eval_interval=opt.eval_interval, scheduler_update_every_step=True)
 
         # Visualize the prompts (what 2D images does StableDiffusion generate)
-        sd = StableDiffusion(device)
-
         fig, axs = plt.subplots(3, 2, figsize=(10, 8))
         for i, text in enumerate(trainer.text):
 
-                imgs = sd.prompt_to_img(opt.text, opt.negative, train_loader.H, train_loader.W, 100)
+                imgs = guidance.prompt_to_img(opt.text, opt.negative, train_loader.H, train_loader.W, 50)
 
                 # Visualize image
                 matplotlib.image.imsave(f"visualizations/prompts/{text}.png".replace(" ", "_"), imgs)
