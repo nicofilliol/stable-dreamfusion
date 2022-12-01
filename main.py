@@ -154,7 +154,7 @@ if __name__ == '__main__':
         fig, axs = plt.subplots(3, 2, figsize=(10, 8))
         for i, text in enumerate(trainer.text):
 
-                imgs = sd.prompt_to_img(opt.prompt, opt.negative, opt.H, opt.W, opt.steps)
+                imgs = sd.prompt_to_img(opt.text, opt.negative, train_loader.H, train_loader.W, 100)
 
                 # Visualize image
                 matplotlib.image.imsave(f"visualizations/prompts/{text}.png".replace(" ", "_"), imgs)
