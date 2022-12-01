@@ -152,8 +152,9 @@ if __name__ == '__main__':
         fig, axs = plt.subplots(3, 2, figsize=(10, 8))
         if not os.path.exists("visualizations/prompts"): os.makedirs("visualizations/prompts")
 
+        # TODO: Fix prompt visualizations (wrong size, wrong RGB)
         for i, text in enumerate(trainer.text):
-                imgs = guidance.prompt_to_img(opt.text, opt.negative, opt.h, opt.w)
+                imgs = guidance.prompt_to_img(opt.text, opt.negative)
 
                 # Visualize image
                 matplotlib.image.imsave(f"visualizations/prompts/{text}.png".replace(" ", "_").replace(",", ""), imgs[0])
