@@ -300,7 +300,7 @@ class Trainer(object):
         else:
             self.text_z = []
             self.text = []
-            for d in ['front', 'side', 'back', 'side', 'overhead', 'bottom']:
+            for d in ['front', 'left side', 'back', 'right side', 'overhead', 'bottom']:
                 # construct dir-encoded text
                 text = f"{self.opt.text}, {d} view"
                 self.text.append(text)
