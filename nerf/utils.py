@@ -379,7 +379,7 @@ class Trainer(object):
         
         # encode pred_rgb to latents
         # _t = time.time()
-        loss = self.guidance.train_step(text_z, pred_rgb, epoch=epoch, step=step, dir=dirs)
+        loss = self.guidance.train_step(text_z, pred_rgb, epoch=epoch, step=step, d=dirs)
         # torch.cuda.synchronize(); print(f'[TIME] total guiding {time.time() - _t:.4f}s')
 
         # occupancy loss
