@@ -158,9 +158,9 @@ if __name__ == '__main__':
 
                 # Visualize image
                 matplotlib.image.imsave(f"visualizations/prompts/{text}.png".replace(" ", "_").replace(",", ""), imgs[0])
-                axs[i].set_axis_off()
-                axs[i].imshow(imgs[0])
-                axs[i].title.set_text(text)
+                axs[i//2, i%2].set_axis_off()
+                axs[i//2, i%2].imshow(imgs[0])
+                axs[i//2, i%2].title.set_text(text)
 
         fig.savefig("visualizations/prompts.png")
 
