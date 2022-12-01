@@ -36,9 +36,10 @@ class StableDiffusion(nn.Module):
         self.max_step = int(self.num_train_timesteps * 0.98)
         self.visualize = visualize
         self.out_folder = out_folder
+        self.dirs = ['front', 'left_side', 'back', 'right_side', 'overhead', 'bottom']
 
         if self.visualize:
-            for d in ['front', 'side', 'back', 'side', 'overhead', 'bottom']:
+            for d in self.dirs:
                 if not os.path.exists(os.path.join(self.out_folder, f"{d}/nerf")): os.makedirs(os.path.join(self.out_folder, f"{d}/nerf"))
                 if not os.path.exists(os.path.join(self.out_folder, f"{d}/noisy")): os.makedirs(os.path.join(self.out_folder, f"{d}/noisy"))
                 if not os.path.exists(os.path.join(self.out_folder, f"{d}/noisy_pred")): os.makedirs(os.path.join(self.out_folder, f"{d}/noisy_pred"))
@@ -87,7 +88,10 @@ class StableDiffusion(nn.Module):
 
     # TODO: Store visualizations of NeRF output, noise and residual
     def train_step(self, text_embeddings, pred_rgb, epoch, step, d, guidance_scale=100):
-        
+        # Convert d into text
+        assert len(d) == 1, "Received more than one direction!"
+        d = self.dirs[d]
+
         # Visualize step
         visualize = self.visualize and step % 10 == 0
 

@@ -375,7 +375,7 @@ class Trainer(object):
             text_z = self.text_z[dirs]
         else:
             text_z = self.text_z
-            dirs = "."
+            dirs = None
         
         # encode pred_rgb to latents
         # _t = time.time()
