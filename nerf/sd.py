@@ -38,10 +38,15 @@ class StableDiffusion(nn.Module):
         self.out_folder = out_folder
 
         if self.visualize:
-            if not os.path.exists(os.path.join(self.out_folder, "nerf")): os.makedirs(os.path.join(self.out_folder, "nerf"))
-            if not os.path.exists(os.path.join(self.out_folder, "noisy")): os.makedirs(os.path.join(self.out_folder, "noisy"))
-            if not os.path.exists(os.path.join(self.out_folder, "denoised")): os.makedirs(os.path.join(self.out_folder, "denoised"))
-            if not os.path.exists(os.path.join(self.out_folder, "residual")): os.makedirs(os.path.join(self.out_folder, "residual"))
+            for d in ['front', 'side', 'back', 'side', 'overhead', 'bottom']:
+                if not os.path.exists(os.path.join(self.out_folder, f"{d}/nerf")): os.makedirs(os.path.join(self.out_folder, f"{d}/nerf"))
+                if not os.path.exists(os.path.join(self.out_folder, f"{d}/noisy")): os.makedirs(os.path.join(self.out_folder, f"{d}/noisy"))
+                if not os.path.exists(os.path.join(self.out_folder, f"{d}/noisy_pred")): os.makedirs(os.path.join(self.out_folder, f"{d}/noisy_pred"))
+                if not os.path.exists(os.path.join(self.out_folder, f"{d}/denoised")): os.makedirs(os.path.join(self.out_folder, f"{d}/denoised"))
+                if not os.path.exists(os.path.join(self.out_folder, f"{d}/residual")): os.makedirs(os.path.join(self.out_folder, f"{d}/residual"))
+                if not os.path.exists(os.path.join(self.out_folder, f"{d}/noise")): os.makedirs(os.path.join(self.out_folder, f"{d}/noise"))
+                if not os.path.exists(os.path.join(self.out_folder, f"{d}/pred_noise")): os.makedirs(os.path.join(self.out_folder, f"{d}/pred_noise"))
+                if not os.path.exists(os.path.join(self.out_folder, f"{d}/residual_noise")): os.makedirs(os.path.join(self.out_folder, f"{d}/residual_noise"))
 
         print(f'[INFO] loading stable diffusion...')
                 
@@ -81,7 +86,7 @@ class StableDiffusion(nn.Module):
         return text_embeddings
 
     # TODO: Store visualizations of NeRF output, noise and residual
-    def train_step(self, text_embeddings, pred_rgb, epoch, step, guidance_scale=100):
+    def train_step(self, text_embeddings, pred_rgb, epoch, step, dir, guidance_scale=100):
         
         # Visualize step
         visualize = self.visualize and step % 10 == 0
@@ -93,7 +98,7 @@ class StableDiffusion(nn.Module):
 
         # Store predicted (by NeRF) image
         if visualize:
-            save_image(pred_rgb_512, os.path.join(self.out_folder, f"nerf/{epoch}_{step}.png"))
+            save_image(pred_rgb_512, os.path.join(self.out_folder, f"{dir}/nerf/{epoch}_{step}.png"))
 
         # torch.cuda.synchronize(); print(f'[TIME] guiding: interp {time.time() - _t:.4f}s')
 
@@ -115,7 +120,10 @@ class StableDiffusion(nn.Module):
             # Store image corresponding to noisy latents
             if visualize:
                 noisy_image = self.decode_latents(latents_noisy)
-                save_image(noisy_image, os.path.join(self.out_folder, f"noisy/{epoch}_{step}.png"))
+                save_image(noisy_image, os.path.join(self.out_folder, f"{dir}/noisy/{epoch}_{step}.png"))
+
+                noise_image = self.decode_latents(noise)
+                save_image(noise_image, os.path.join(self.out_folder, f"{dir}/noise/{epoch}_{step}.png"))
 
             # pred noise
             latent_model_input = torch.cat([latents_noisy] * 2)
@@ -129,14 +137,29 @@ class StableDiffusion(nn.Module):
         # Compute previous noisy sample based on predicted noise by diffusion model
         with torch.no_grad():
             if visualize:
+                # Denoised Image
                 prev_latents = self.get_previous_sample(latents, t, noise_pred)
                 prev_image = self.decode_latents(prev_latents)
-                save_image(prev_image, os.path.join(self.out_folder, f"denoised/{epoch}_{step}.png"))
+                save_image(prev_image, os.path.join(self.out_folder, f"{dir}/denoised/{epoch}_{step}.png"))
 
+                # Noisy Image using Predicted Noise
+                pred_noisy_latents = self.scheduler.add_noise(latents, noise_pred, t)
+                pred_noisy_image = self.decode_latents(pred_noisy_latents)
+                save_image(pred_noisy_image, os.path.join(self.out_folder, f"{dir}/noisy_pred/{epoch}_{step}.png"))
+
+                # Image with residual noise applied
                 residual_noise = noise_pred-noise
-                res_latents = self.get_previous_sample(latents, t, residual_noise)
+                res_latents = self.scheduler.add_noise(latents, residual_noise, t)
                 residual_image = self.decode_latents(res_latents)
-                save_image(residual_image, os.path.join(self.out_folder, f"residual/{epoch}_{step}.png"))
+                save_image(residual_image, os.path.join(self.out_folder, f"{dir}/residual/{epoch}_{step}.png"))
+
+                # Predicted Noise
+                pred_noise_image = self.decode_latents(noise_pred)
+                save_image(pred_noise_image, os.path.join(self.out_folder, f"{dir}/pred_noise/{epoch}_{step}.png"))
+
+                # Residual Noise
+                res_noise_image = self.decode_latents(residual_noise)
+                save_image(res_noise_image, os.path.join(self.out_folder, f"{dir}/residual_noise/{epoch}_{step}.png"))
 
         # w(t), sigma_t^2
         w = (1 - self.alphas[t])

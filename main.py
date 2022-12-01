@@ -7,6 +7,9 @@ from optimizer import Shampoo
 
 from nerf.gui import NeRFGUI
 
+import matplotlib.pyplot as plt
+import matplotlib
+
 # torch.autograd.set_detect_anomaly(True)
 
 if __name__ == '__main__':
@@ -144,6 +147,22 @@ if __name__ == '__main__':
             raise NotImplementedError(f'--guidance {opt.guidance} is not implemented.')
 
         trainer = Trainer('df', opt, model, guidance, device=device, workspace=opt.workspace, optimizer=optimizer, ema_decay=None, fp16=opt.fp16, lr_scheduler=scheduler, use_checkpoint=opt.ckpt, eval_interval=opt.eval_interval, scheduler_update_every_step=True)
+
+        # Visualize the prompts (what 2D images does StableDiffusion generate)
+        sd = StableDiffusion(device)
+
+        fig, axs = plt.subplots(3, 2, figsize=(10, 8))
+        for i, text in enumerate(trainer.text):
+
+                imgs = sd.prompt_to_img(opt.prompt, opt.negative, opt.H, opt.W, opt.steps)
+
+                # Visualize image
+                matplotlib.image.imsave(f"visualizations/prompts/{text}.png".replace(" ", "_"), imgs)
+                axs[i].set_axis_off()
+                axs[i].imshow(imgs[0])
+                axs[i].title.set_text(text)
+
+        fig.savefig("visualizations/prompts.png")
 
         if opt.gui:
             trainer.train_loader = train_loader # attach dataloader to trainer
