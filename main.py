@@ -150,12 +150,14 @@ if __name__ == '__main__':
 
         # Visualize the prompts (what 2D images does StableDiffusion generate)
         fig, axs = plt.subplots(3, 2, figsize=(10, 8))
+        if not os.path.exists("visualizations/prompts"): os.makedirs("visualizations/prompts")
+
         for i, text in enumerate(trainer.text):
 
                 imgs = guidance.prompt_to_img(opt.text, opt.negative, opt.h, opt.w, 50)
 
                 # Visualize image
-                matplotlib.image.imsave(f"visualizations/prompts/{text}.png".replace(" ", "_"), imgs)
+                matplotlib.image.imsave(f"visualizations/prompts/{text}.png".replace(" ", "_").replace(",", ""), imgs)
                 axs[i].set_axis_off()
                 axs[i].imshow(imgs[0])
                 axs[i].title.set_text(text)
