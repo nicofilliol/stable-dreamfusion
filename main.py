@@ -153,8 +153,7 @@ if __name__ == '__main__':
         if not os.path.exists("visualizations/prompts"): os.makedirs("visualizations/prompts")
 
         for i, text in enumerate(trainer.text):
-
-                imgs = guidance.prompt_to_img(opt.text, opt.negative, opt.h, opt.w, 50)
+                imgs = guidance.prompt_to_img(opt.text, opt.negative, opt.h, opt.w)
 
                 # Visualize image
                 matplotlib.image.imsave(f"visualizations/prompts/{text}.png".replace(" ", "_").replace(",", ""), imgs[0])
