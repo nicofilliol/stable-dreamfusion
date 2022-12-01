@@ -157,7 +157,7 @@ if __name__ == '__main__':
                 imgs = guidance.prompt_to_img(opt.text, opt.negative, opt.h, opt.w, 50)
 
                 # Visualize image
-                matplotlib.image.imsave(f"visualizations/prompts/{text}.png".replace(" ", "_").replace(",", ""), imgs)
+                matplotlib.image.imsave(f"visualizations/prompts/{text}.png".replace(" ", "_").replace(",", ""), imgs[0])
                 axs[i].set_axis_off()
                 axs[i].imshow(imgs[0])
                 axs[i].title.set_text(text)
