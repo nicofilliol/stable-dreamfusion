@@ -336,7 +336,7 @@ class Trainer(object):
 
     ### ------------------------------	
 
-    def train_step(self, data, epoch, step):
+    def train_step(self, data, iteration):
 
         rays_o = data['rays_o'] # [B, N, 3]
         rays_d = data['rays_d'] # [B, N, 3]
@@ -379,7 +379,7 @@ class Trainer(object):
         
         # encode pred_rgb to latents
         # _t = time.time()
-        loss = self.guidance.train_step(text_z, pred_rgb, epoch=epoch, step=step, d=dirs)
+        loss = self.guidance.train_step(text_z, pred_rgb, iteration=iteration, d=dirs)
         # torch.cuda.synchronize(); print(f'[TIME] total guiding {time.time() - _t:.4f}s')
 
         # occupancy loss
@@ -485,10 +485,12 @@ class Trainer(object):
         
         for epoch in range(self.epoch + 1, max_epochs + 1):
             self.epoch = epoch
+            
 
             self.train_one_epoch(train_loader, epoch=epoch)
 
             if self.workspace is not None and self.local_rank == 0:
+                print("Saving checkpoint...")
                 self.save_checkpoint(full=True, best=False)
 
             if self.epoch % self.eval_interval == 0:
@@ -706,7 +708,7 @@ class Trainer(object):
             self.optimizer.zero_grad()
 
             with torch.cuda.amp.autocast(enabled=self.fp16):
-                pred_rgbs, pred_ws, loss = self.train_step(data, epoch=epoch, step=i)
+                pred_rgbs, pred_ws, loss = self.train_step(data, iteration=((epoch-1)*len(loader)+i))
          
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)
@@ -715,7 +717,7 @@ class Trainer(object):
             if self.scheduler_update_every_step:
                 self.lr_scheduler.step()
 
-            loss_val = loss.item()
+            loss_val = loss.detach().item()
             total_loss += loss_val
 
             if self.local_rank == 0:
@@ -733,9 +735,14 @@ class Trainer(object):
                     pbar.set_description(f"loss={loss_val:.4f} ({total_loss/self.local_step:.4f})")
                 pbar.update(loader.batch_size)
 
+            print("Trying to empty CUDA cache...")
+
             # Empty cuda cache
             del data
+            del loss
             torch.cuda.empty_cache()
+
+        print("Emptied CUDA cache...")
 
         if self.ema is not None:
             self.ema.update()
