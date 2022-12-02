@@ -735,14 +735,10 @@ class Trainer(object):
                     pbar.set_description(f"loss={loss_val:.4f} ({total_loss/self.local_step:.4f})")
                 pbar.update(loader.batch_size)
 
-            print("Trying to empty CUDA cache...")
-
             # Empty cuda cache
             del data
             del loss
             torch.cuda.empty_cache()
-
-        print("Emptied CUDA cache...")
 
         if self.ema is not None:
             self.ema.update()

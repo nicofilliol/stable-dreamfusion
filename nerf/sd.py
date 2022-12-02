@@ -202,6 +202,7 @@ class StableDiffusion(nn.Module):
                 latent_model_input = torch.cat([latents] * 2)
 
                 # predict the noise residual
+                torch.cuda.empty_cache()
                 with torch.no_grad():
                     noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=text_embeddings)['sample']
 
