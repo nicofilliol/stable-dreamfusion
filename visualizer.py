@@ -5,6 +5,7 @@ import numpy as np
 import cv2
 import os
 import re
+import xarray as xr
 
 class AnimationButtons():
     def play(frame_duration = 1000, transition_duration = 0):
@@ -41,32 +42,17 @@ residual, _ = load_images("outputs/visualizations/front/residual")
 
 imgs = list(zip(nerf, noisy, denoised, residual))
 titles = [f"<b>Iteration {it}</b>" for it in iterations]
+columns = ["NeRF", "Noisy", "Denoised", "Residual"]
 
+data = xr.DataArray(np.array(imgs), dims=("x", "nerf", "noisy", "denoised", "residual"), coords={"x": iterations})
 # Create figure on the basis of the animated facetted imshow figure
-fig = px.imshow(np.array(imgs), facet_col=1, animation_frame=0, binary_string=True, labels=dict(animation_frame="slice"))
+fig = px.imshow(data, facet_col=1, facet_col_wrap=2, width=600, height=600, animation_frame=0, binary_string=True, labels=dict(animation_frame="Iteration"))
+for i, a in enumerate(fig.layout.annotations):
+    a.text = f"<b>{columns[i]}</b>"
 
-for i, title in enumerate(titles):
-    fig["frames"][i]["layout"]["title"] = title 
-
-# Create "template" figure to transfer layout onto the `fig` figure
-layout = make_subplots(rows=2, cols=2, 
-                       subplot_titles=["NeRF Render", "Noisy Image", "Denoised", "Residual"],
-                       specs=[[{"type":"Image"}, {"type":"Image"}], [{"type":"Image"}, {"type":"Image"}]],
-                       row_heights=[250, 250],
-                       column_widths=[250, 250],
-                       vertical_spacing=0.075,
-                       horizontal_spacing=0.05)
-
-layout.update_layout(title="<b>Iteration 0</b>",
-                     title_x=0.5,
-                     width= 600,
-                     updatemenus=[dict(type="buttons", buttons=[AnimationButtons.play(), AnimationButtons.pause()], direction="left", x = 0.5, xanchor = 'center', y = -0.1, yanchor = 'bottom')],
-                     xaxis_visible=False, yaxis_visible=False,
-                     xaxis2_visible=False, yaxis2_visible=False,
-                     xaxis3_visible=False, yaxis3_visible=False,
-                     xaxis4_visible=False, yaxis4_visible=False)
-
-
-
-fig["layout"] = layout["layout"]
+fig.update_layout(coloraxis_showscale=False)
+fig.update_xaxes(showticklabels=False)
+fig.update_yaxes(showticklabels=False)
 fig.show()
+
+fig.write_html('outputs/plotly_demo_1.html')
