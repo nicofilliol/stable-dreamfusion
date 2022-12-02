@@ -7,11 +7,6 @@ import os
 import re
 
 class AnimationButtons():
-    def play_scatter(frame_duration = 500, transition_duration = 300):
-        return dict(label="Play", method="animate", args=
-                    [None, {"frame": {"duration": frame_duration, "redraw": False},
-                            "fromcurrent": True, "transition": {"duration": transition_duration, "easing": "quadratic-in-out"}}])
-    
     def play(frame_duration = 1000, transition_duration = 0):
         return dict(label="Play", method="animate", args=
                     [None, {"frame": {"duration": frame_duration, "redraw": True},
@@ -44,24 +39,34 @@ noisy, _ = load_images("outputs/visualizations/front/noisy")
 denoised, _ = load_images("outputs/visualizations/front/denoised")
 residual, _ = load_images("outputs/visualizations/front/residual")
 
-imgs = [nerf, noisy, denoised, residual]
-titles = [f"Iteration {it}" for it in iterations]
+imgs = list(zip(nerf, noisy, denoised, residual))
+titles = [f"<b>Iteration {it}</b>" for it in iterations]
+
+# Create figure on the basis of the animated facetted imshow figure
+fig = px.imshow(np.array(imgs), facet_col=1, animation_frame=0, binary_string=True, labels=dict(animation_frame="slice"))
+
+for i, title in enumerate(titles):
+    fig["frames"][i]["layout"]["title"] = title 
 
 # Create "template" figure to transfer layout onto the `fig` figure
 layout = make_subplots(rows=2, cols=2, 
                        subplot_titles=["NeRF Render", "Noisy Image", "Denoised", "Residual"],
-                       specs=[[{"type":"Image"}, {"type":"Image"}], [{"type":"Image"}, {"type":"Image"}]], 
-                       horizontal_spacing = 0.05,
-                       vertical_spacing = 0.05,
-                       row_heights=[500,500], column_widths=[500,500])
+                       specs=[[{"type":"Image"}, {"type":"Image"}], [{"type":"Image"}, {"type":"Image"}]],
+                       row_heights=[250, 250],
+                       column_widths=[250, 250],
+                       vertical_spacing=0.075,
+                       horizontal_spacing=0.05)
 
-max_idx = min(len(nerf), len(noisy), len(denoised), len(residual))
-for i, title in enumerate(titles[:max_idx]):
-    layout.add_trace(go.Image(z=nerf[i]), row=1, col=1)                   
-    layout.add_trace(go.Image(z=noisy[i]), row=1, col=2)                   
-    layout.add_trace(go.Image(z=denoised[i]), row=2, col=1)                   
-    layout.add_trace(go.Image(z=residual[i]), row=2, col=2)                   
+layout.update_layout(title="<b>Iteration 0</b>",
+                     title_x=0.5,
+                     width= 600,
+                     updatemenus=[dict(type="buttons", buttons=[AnimationButtons.play(), AnimationButtons.pause()], direction="left", x = 0.5, xanchor = 'center', y = -0.1, yanchor = 'bottom')],
+                     xaxis_visible=False, yaxis_visible=False,
+                     xaxis2_visible=False, yaxis2_visible=False,
+                     xaxis3_visible=False, yaxis3_visible=False,
+                     xaxis4_visible=False, yaxis4_visible=False)
 
-layout.update_layout(title="Prompt",
-                     updatemenus=[dict(type="buttons", buttons=[AnimationButtons.play(), AnimationButtons.pause()])])
-layout.show()
+
+
+fig["layout"] = layout["layout"]
+fig.show()
