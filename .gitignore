@@ -11,3 +11,5 @@ trial*/
 TOKEN
 
 outputs/
+visualizations/
+.DS_Store

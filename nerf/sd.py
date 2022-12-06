@@ -44,6 +44,7 @@ class StableDiffusion(nn.Module):
                 if not os.path.exists(os.path.join(self.out_folder, f"{d}/nerf")): os.makedirs(os.path.join(self.out_folder, f"{d}/nerf"))
                 if not os.path.exists(os.path.join(self.out_folder, f"{d}/noisy")): os.makedirs(os.path.join(self.out_folder, f"{d}/noisy"))
                 if not os.path.exists(os.path.join(self.out_folder, f"{d}/noisy_pred")): os.makedirs(os.path.join(self.out_folder, f"{d}/noisy_pred"))
+                if not os.path.exists(os.path.join(self.out_folder, f"{d}/final_denoised")): os.makedirs(os.path.join(self.out_folder, f"{d}/final_denoised"))
                 if not os.path.exists(os.path.join(self.out_folder, f"{d}/denoised")): os.makedirs(os.path.join(self.out_folder, f"{d}/denoised"))
                 if not os.path.exists(os.path.join(self.out_folder, f"{d}/residual")): os.makedirs(os.path.join(self.out_folder, f"{d}/residual"))
                 if not os.path.exists(os.path.join(self.out_folder, f"{d}/noise")): os.makedirs(os.path.join(self.out_folder, f"{d}/noise"))
@@ -151,6 +152,11 @@ class StableDiffusion(nn.Module):
                 prev_image = self.decode_latents(prev_latents)
                 save_image(prev_image, os.path.join(self.out_folder, f"{d}/denoised/{iteration}.png"))
 
+                # Completely Denoised Image
+                final_latents = self.produce_final_latents(text_embeddings, t, latents, guidance_scale)
+                final_image = self.decode_latents(final_latents)
+                save_image(final_image, os.path.join(self.out_folder, f"{d}/final_denoised/{iteration}.png"))
+
                 # Noisy Image using Predicted Noise
                 pred_noisy_latents = self.scheduler.add_noise(latents, noise_pred, t)
                 pred_noisy_image = self.decode_latents(pred_noisy_latents)
@@ -188,6 +194,27 @@ class StableDiffusion(nn.Module):
 
     def get_previous_sample(self, sample, timestep, noise_pred):
         return self.scheduler._get_prev_sample(sample, timestep, timestep-1, noise_pred)
+
+    def produce_final_latents(self, text_embeddings, t, latents, guidance_scale):
+        with torch.autocast('cuda'):
+            idx = torch.where(self.scheduler.timesteps == t)[0].item()
+            for i, t in enumerate(self.scheduler.timesteps[idx:]):
+                # expand the latents if we are doing classifier-free guidance to avoid doing two forward passes.
+                latent_model_input = torch.cat([latents] * 2)
+
+                # predict the noise residual
+                torch.cuda.empty_cache()
+                with torch.no_grad():
+                    noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=text_embeddings)['sample']
+
+                # perform guidance
+                noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
+                noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
+
+                # compute the previous noisy sample x_t -> x_t-1
+                latents = self.scheduler.step(noise_pred, t, latents)['prev_sample']
+        
+        return latents
 
     def produce_latents(self, text_embeddings, height=512, width=512, num_inference_steps=50, guidance_scale=7.5, latents=None):
 
