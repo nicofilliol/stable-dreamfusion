@@ -39,7 +39,7 @@ def load_images(folder) -> list:
 
 nerf, iterations = load_images("visualizations/front/nerf")
 noisy, _ = load_images("visualizations/front/noisy")
-denoised, _ = load_images("visualizations/front/denoised")
+denoised, _ = load_images("visualizations/front/final_denoised")
 residual, _ = load_images("visualizations/front/residual")
 
 n = min(len(nerf), len(noisy), len(denoised), len(residual))

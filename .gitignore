@@ -12,4 +12,5 @@ TOKEN
 
 outputs/
 visualizations/
+visualizations_old/
 .DS_Store
