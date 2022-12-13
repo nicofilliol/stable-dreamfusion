@@ -40,13 +40,13 @@ def load_images(folder) -> list:
 nerf, iterations = load_images("visualizations/front/nerf")
 noisy, _ = load_images("visualizations/front/noisy")
 denoised, _ = load_images("visualizations/front/final_denoised")
-residual, _ = load_images("visualizations/front/residual")
+residual, _ = load_images("visualizations/front/residual_noise")
 
 n = min(len(nerf), len(noisy), len(denoised), len(residual))
 
 imgs = np.array(list(zip(nerf, noisy, denoised, residual))) # order is flipped
 titles = [f"<b>Iteration {it}</b>" for it in iterations]
-columns = ["Denoised", "Residual", "NeRF", "Noisy",] # weird convention
+columns = ["Denoised", "Residual Noise", "NeRF", "Noisy",] # weird convention
 
 print(imgs.shape)
 data = xr.DataArray(np.array(imgs), coords=dict(iterations=iterations, img_type=np.arange(4)), dims=["iterations", "img_type", "height", "width", "rgb"])
@@ -63,4 +63,4 @@ fig.update_xaxes(showticklabels=False, visible=False)
 fig.update_yaxes(showticklabels=False, visible=False)
 fig.show()
 
-fig.write_html('outputs/plotly_demo_1.html')
+fig.write_html('outputs/plotly_demo_1.html', auto_play=False)

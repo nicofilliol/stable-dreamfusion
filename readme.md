@@ -1,8 +1,21 @@
 # Stable-Dreamfusion
 
-A pytorch implementation of the text-to-3D model **Dreamfusion**, powered by the [Stable Diffusion](https://github.com/CompVis/stable-diffusion) text-to-2D model.
+A pytorch implementation of the text-to-3D model **Dreamfusion**, powered by the [Stable Diffusion](https://github.com/CompVis/stable-diffusion) text-to-2D model and adapted for the course project for the class **9.S898 - Deep Learning** at MIT in Fall 2022.
+
+## Additions
+For reproducing the experiments, please use this Google Colab notebook: [![DreamFusion Blog](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1EhlbJX_QT5wW9eV8TFCHmdM0r-SCcAgJ?usp=sharing)
+
+This repo contains additions to the code (mostly in the file `sd.py`) that visualize the intermediate steps of the training process such as the rendering of the NeRF, the noisy imgae, the denoised image, and the residual noise used for backpropagation. An example can be seen below:
+
+![Training Process](assets/training_process.png)
+
+It further includes a file called `visualizer.py` that takes the exported files from the training process and produces an interactive visualization using Plotly.
+
+This project is part of a blog and the link to the blog will be added as soon as it is being hosted online.
 
 The original paper's project page: [_DreamFusion: Text-to-3D using 2D Diffusion_](https://dreamfusion3d.github.io/).
+
+---
 
 **NEW**: a **pure pytorch** version is also supported now by using `-O2` (no needs to build CUDA extensions, although needs more GPU memory).
 
